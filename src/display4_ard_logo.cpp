@@ -51,7 +51,7 @@ void display_pos (unsigned char pos)
      
 }
 
-void lcd_init (void)
+void lcd_init ()
 {
     delay(15);                              //Warte 15ms
     write_instr(0x33);                      //Datenbusbreite 8 Bit
