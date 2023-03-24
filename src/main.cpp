@@ -50,11 +50,6 @@ void sonderzeichen()
 		//write_char(pfeilnu[k]);             	//Zeilen 0...7 des Sonderzeichen an das CGRAM senden
 		write_char(my[k]);             			//Zeilen 0...7 des Sonderzeichen an das CGRAM senden
 	}
-
-//	for (int i = 0; i <= 7; i++) {               	//Zeilen 0...7
-//		//write_char(pfeilnu[k]);             	//Zeilen 0...7 des Sonderzeichen an das CGRAM senden
-//		write_char(hoch3[i]);             			//Zeilen 0...7 des Sonderzeichen an das CGRAM senden
-//	}
 }
 
 void linieAnzeigen(int displayPos, String text) {
@@ -68,12 +63,12 @@ void linieAnzeigen(int displayPos, String text) {
 /* Hier wird alles einmal ausgeführt vor dem Hauptprogramm. Demnach ist dies unsere Initialisierung. */
 void setup() {
 	lcd_init();
-	sonderzeichen();
+	//sonderzeichen();
 
 	// Port Ein-/Ausgänge
 	DDRA = 0xFF; // Ausgang Display
 	DDRB = 0xFF; // Ausgang Display
-	DDRC = B00000000; // Eingang/Ausgang Feinstaubsensor NOCH ANPASSEN
+	//DDRC = B00000000; // Eingang/Ausgang Feinstaubsensor NOCH ANPASSEN
 }
 /* Unser Hauptprogramm. Hier wird alles wiederholt ausgeführt solange kein Interrupt dies unterbrechen sollte. */
 void loop() {
@@ -90,7 +85,7 @@ void loop() {
 	display_text(T_g);
 	write_char(0x2F);
 	display_text(T_m);
-	display_text(T_hoch3);
+	// Hoch 3
 	display_pos(0x4B);
 	write_char(Z_Pfeilnu);
 	write_instr(0x0C);

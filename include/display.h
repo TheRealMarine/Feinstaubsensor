@@ -10,7 +10,6 @@
 #define T_daten             8
 #define T_g                 9
 #define T_m                 10
-#define T_hoch3             11
 
 #define Z_oe           		0x94
 #define Z_Pfeilnu      		0x00
@@ -29,14 +28,13 @@ char const Display_Text7[] = {"Feinstaub-."};
 char const Display_Text8[] = {"daten:."};
 char const Display_Text9[] = {"g."};
 char const Display_Text10[] = {"m."};
-char const Display_Text11[] = {"³."};
 
 
 //Zeiger
 char const *ptr_hilfe;                //Hilfszeiger
-char const *ptr_text[] = {Display_Text0, Display_Text1, Display_Text2, Display_Text3,
-								Display_Text4, Display_Text5, Display_Text6, Display_Text7, Display_Text8, Display_Text9,
-								Display_Text10, Display_Text11};
+char const *ptr_text[] = {Display_Text0, Display_Text1, Display_Text2, Display_Text3, Display_Text4,
+						  Display_Text5, Display_Text6, Display_Text7, Display_Text8, Display_Text9,
+						  Display_Text10};
 
 // ALARM
 
