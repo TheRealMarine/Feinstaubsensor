@@ -5,6 +5,15 @@
 #include <Arduino.h>
 #include <display4_ard_logo.h>
 #include <display.h>
+#include <flash.h>
+
+/*
+//DDRAM
+Zeile 1: 0x00-0x09s
+Zeile 2: 0x40-0x49
+Zeile 3: 0x0A-0x13
+Zeile 4: 0x4A-0x53
+*/
 
 //////////////////////////////////////////////////
 /////////////////////Defines//////////////////////
@@ -29,9 +38,9 @@ void display_text(int text_nr)
 	ptr_hilfe = ptr_text[text_nr];          	//Text-Zeiger auf Anfangsadresse von Display_Texttext_nr
 												//setzen und Adresse an Hilfe-Zeiger ï¿œbergeben
 	tab = 0;
-	while ( *(ptr_hilfe + tab) != '.' )     	//Wiederhole solange der Hilfe-Zeiger nicht auf dem
+	while ( *(ptr_hilfe + tab) != '$' )     	//Wiederhole solange der Hilfe-Zeiger nicht auf dem
 		{
-												//Zeichen "." steht
+												//Zeichen "$" steht
 
 		write_char(*(ptr_hilfe + tab));     	//Zeichen an der Position des Hilfe-Zeigers an die Anzeige
 		tab++;                              	//senden Adresse des Hilfezeigers umn 1 erhï¿œhen
@@ -52,7 +61,7 @@ void sonderzeichen()
 	}
 }
 
-void linieAnzeigen(int displayPos, String text) {
+void Anzeigen(int displayPos, String text) {
 	
 }
 
@@ -63,7 +72,7 @@ void linieAnzeigen(int displayPos, String text) {
 /* Hier wird alles einmal ausgeführt vor dem Hauptprogramm. Demnach ist dies unsere Initialisierung. */
 void setup() {
 	lcd_init();
-	//sonderzeichen();
+	sonderzeichen();
 
 	// Port Ein-/Ausgänge
 	DDRA = 0xFF; // Ausgang Display
@@ -73,13 +82,20 @@ void setup() {
 /* Unser Hauptprogramm. Hier wird alles wiederholt ausgeführt solange kein Interrupt dies unterbrechen sollte. */
 void loop() {
 
-	write_instr(0x01);
-	display_pos(0x00);
-	display_text(T_Feinstaub);
-	display_pos(0x40);
-	display_text(T_daten);
-	write_instr(0x0C);
+	write_instr(0x01); // Display löschen
 
+	// "Feinstaubdaten" anzeigen
+	display_pos(0x00);					
+	display_text(DDisplay_Text0);		// "Feinstaub-"
+	display_pos(0x40);					
+	display_text(DDisplay_Text1); 		// "daten:"
+
+	// PM2.5 sowie Wert anzeigen
+	display_pos(0x0A);
+	display_text(DDisplay_Text3); // "PM2.5:"
+
+
+/*
 	display_pos(0x0A);
 	write_char(Z_my);
 	display_text(T_g);
@@ -87,8 +103,8 @@ void loop() {
 	display_text(T_m);
 	// Hoch 3
 	display_pos(0x4B);
-	write_char(Z_Pfeilnu);
+	// Vierte Zeile
 	write_instr(0x0C);
-
+*/
 	delay(5000);
 }
