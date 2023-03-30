@@ -5,15 +5,6 @@
 #include <Arduino.h>
 #include <display4_ard_logo.h>
 #include <display.h>
-#include <flash.h>
-
-/*
-//DDRAM
-Zeile 1: 0x00-0x09s
-Zeile 2: 0x40-0x49
-Zeile 3: 0x0A-0x13
-Zeile 4: 0x4A-0x53
-*/
 
 //////////////////////////////////////////////////
 /////////////////////Defines//////////////////////
@@ -31,8 +22,8 @@ Zeile 4: 0x4A-0x53
 /////////////////////Methoden/////////////////////
 //////////////////////////////////////////////////
 
-void display_text(int text_nr)
-{
+/*
+void display_text(int text_nr) {
 	unsigned char tab;                      	//Lokale Zï¿œhlvariable tab deklarieren/
 
 	ptr_hilfe = ptr_text[text_nr];          	//Text-Zeiger auf Anfangsadresse von Display_Texttext_nr
@@ -46,8 +37,22 @@ void display_text(int text_nr)
 		tab++;                              	//senden Adresse des Hilfezeigers umn 1 erhï¿œhen
 		}
 }
+*/
 
-void sonderzeichen()
+/* 
+* Name: display_text 
+* 
+* Funktion: Diese Funktion dient der Ausgabe von Text aus dem Datentyp String. 
+*/
+void display_text(String text) {
+	char character = text.charAt(0);
+	while(character =! "$") {
+		write_char(character);
+		character = NULL;
+	}
+}
+
+void sonderzeichen() // Trägt in das CGRAM ein
 {
 	write_instr(0x40);                      	//CGRAM auf 0 stellen
 	for (int i = 0; i <= 7; i++) {                	//Zeilen 0...7
@@ -55,10 +60,13 @@ void sonderzeichen()
 		write_char(pfeilnu[i]);
 	}
 
-	for (int k = 0; k <= 7; k++) {               	//Zeilen 0...7
+	for (int i = 0; i <= 7; i++) {               	//Zeilen 0...7
 		//write_char(pfeilnu[k]);             	//Zeilen 0...7 des Sonderzeichen an das CGRAM senden
-		write_char(my[k]);             			//Zeilen 0...7 des Sonderzeichen an das CGRAM senden
+		write_char(my[i]);             			//Zeilen 0...7 des Sonderzeichen an das CGRAM senden
 	}
+
+
+
 }
 
 void Anzeigen(int displayPos, String text) {
@@ -86,13 +94,15 @@ void loop() {
 
 	// "Feinstaubdaten" anzeigen
 	display_pos(0x00);					
-	display_text(DDisplay_Text0);		// "Feinstaub-"
+	display_text("Feinstaub-");		// "Feinstaub-"
 	display_pos(0x40);					
-	display_text(DDisplay_Text1); 		// "daten:"
+	display_text("daten:"); 		// "daten:"
 
 	// PM2.5 sowie Wert anzeigen
 	display_pos(0x0A);
-	display_text(DDisplay_Text3); // "PM2.5:"
+	display_text("PM2.5:"); // "PM2.5:"
+	display_pos(0x4A);
+	display_text("sad");
 
 
 /*
