@@ -2,6 +2,7 @@
 /////////////////////Includes/////////////////////
 //////////////////////////////////////////////////
 
+#include <stdlib.h>
 #include <Arduino.h>
 #include <display4_ard_logo.h>
 #include <display.h>
@@ -10,13 +11,17 @@
 /////////////////////Defines//////////////////////
 //////////////////////////////////////////////////
 
-
+#define Zeile_1 0x00
+#define Zeile_2 0x40
+#define Zeile_3 0x0A
+#define Zeile_4 0x4A
 
 //////////////////////////////////////////////////
 ////////////////////Variables/////////////////////
 //////////////////////////////////////////////////
 
-
+int value_PM25; // PM2.5 Wert des Feinstaubssensors 
+int value_PM10; // PM10 Wert des Feinstaubssensors 
 
 //////////////////////////////////////////////////
 /////////////////////Methoden/////////////////////
@@ -42,35 +47,35 @@ void display_text(int text_nr) {
 /* 
 * Name: display_text 
 * 
-* Funktion: Diese Funktion dient der Ausgabe von Text aus dem Datentyp String. 
+* Funktion: Diese Funktion dient der Ausgabe von Text.
+* 
+* Input:
+*		String: Text welcher auf dem Display ausgegeben werden soll.
+*				WICHTIG: Das Zeichen "$" endet die Ausgabe. Dieser muss mit in dem String stehen!
+*
+* Output: -
 */
 void display_text(String text) {
-	char character = text.charAt(0);
-	while(character =! "$") {
-		write_char(character);
-		character = NULL;
+	char character = text.charAt(0); // Ersten Buchstaben/Zeichen auswählen
+	text.remove(0, 1); // Entferne ersten Buchstaben/Zeichen welcher ausgewählt wurde
+	while(character =! "$") { // Nur solange der ausgewählte Buchstabe/Zeichen nicht das endungszeichen "$" ist, write_char ausführen
+		write_char(character); // Ausgewählter Buchstabe/Zeichen auf display ausgeben
+		character = NULL; // Ausgewähter Buchstabe/Zeichen wieder entfernen damit der nächste sicher ausgewählt werden kann
+		char character = text.charAt(0); // Ersten Buchstaben/Zeichen auswählen
+		text.remove(0, 1); // Entferne ersten Buchstaben/Zeichen welcher ausgewählt wurde
 	}
 }
 
 void sonderzeichen() // Trägt in das CGRAM ein
 {
-	write_instr(0x40);                      	//CGRAM auf 0 stellen
-	for (int i = 0; i <= 7; i++) {                	//Zeilen 0...7
-		//write_char(my[i]);                    //Zeilen 0...7 des Sonderzeichen an das CGRAM senden
-		write_char(pfeilnu[i]);
+	write_instr(0x40); //CGRAM auf 0 stellen
+	for (int i = 0; i <= 7; i++) { //Zeilen 0...7
+		write_char(pfeilnu[i]); //Zeilen 0...7 des Sonderzeichen an das CGRAM senden
 	}
 
-	for (int i = 0; i <= 7; i++) {               	//Zeilen 0...7
-		//write_char(pfeilnu[k]);             	//Zeilen 0...7 des Sonderzeichen an das CGRAM senden
-		write_char(my[i]);             			//Zeilen 0...7 des Sonderzeichen an das CGRAM senden
+	for (int i = 0; i <= 7; i++) { //Zeilen 0...7
+		write_char(my[i]); //Zeilen 0...7 des Sonderzeichen an das CGRAM senden
 	}
-
-
-
-}
-
-void Anzeigen(int displayPos, String text) {
-	
 }
 
 //////////////////////////////////////////////////
@@ -80,7 +85,7 @@ void Anzeigen(int displayPos, String text) {
 /* Hier wird alles einmal ausgeführt vor dem Hauptprogramm. Demnach ist dies unsere Initialisierung. */
 void setup() {
 	lcd_init();
-	sonderzeichen();
+	sonderzeichen(); // vlt mit init umtauschen?
 
 	// Port Ein-/Ausgänge
 	DDRA = 0xFF; // Ausgang Display
@@ -94,27 +99,15 @@ void loop() {
 
 	// "Feinstaubdaten" anzeigen
 	display_pos(0x00);					
-	display_text("Feinstaub-");		// "Feinstaub-"
+	display_text("Feinstaub-$");		// "Feinstaub-"
 	display_pos(0x40);					
-	display_text("daten:"); 		// "daten:"
+	display_text("daten:$"); 		// "daten:"
 
-	// PM2.5 sowie Wert anzeigen
+	// PM2.5 sowie den Wert davon anzeigen
 	display_pos(0x0A);
-	display_text("PM2.5:"); // "PM2.5:"
+	display_text("PM2.5:$"); // "PM2.5:"
 	display_pos(0x4A);
-	display_text("sad");
+	display_text(String(value_PM25)+"$"); // Wert von PM2.5 ausgeben
 
-
-/*
-	display_pos(0x0A);
-	write_char(Z_my);
-	display_text(T_g);
-	write_char(0x2F);
-	display_text(T_m);
-	// Hoch 3
-	display_pos(0x4B);
-	// Vierte Zeile
-	write_instr(0x0C);
-*/
-	delay(5000);
+	delay(1000);
 }
