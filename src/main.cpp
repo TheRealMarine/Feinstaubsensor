@@ -17,17 +17,17 @@
 #define Zeile_3 0x0A
 #define Zeile_4 0x4A
 
-SoftwareSerial FeinstaubsensorPort = SoftwareSerial(PORTC5/*rxPin*/, PORTC6/*txPin*/); // Feinstaubsensor
-DHT Temperatursensor (0, DHT22); // Temperatursensor
+SoftwareSerial SDS_FeinstaubsensorPort = SoftwareSerial(PORTC5/*rxPin*/, PORTC6/*txPin*/); // Feinstaubsensor
+DHT DHT_Temperatursensor (0, DHT22); // DHT_Temperatursensor
 
 //////////////////////////////////////////////////
 ////////////////////Variables/////////////////////
 //////////////////////////////////////////////////
 
-float value_PM25 = 0; // PM2.5 Wert des Feinstaubssensors 
-float value_PM10 = 0; // PM10 Wert des Feinstaubssensors 
-float luftfeuchtigkeit = 0; // Luftfeuchtigkeit des Temperatursensors
-float temperatur = 0; // Temperatur des Temperatursensors
+float SDS_PM25 = 0; // PM2.5 Wert des Feinstaubssensors 
+float SDS_PM10 = 0; // PM10 Wert des Feinstaubssensors 
+float DHT_Luftfeuchtigkeit = 0; // DHT_Luftfeuchtigkeit des DHT_Temperatursensors
+float DHT_Temperatur = 0; // DHT_Temperatur des DHT_Temperatursensors
 
 //////////////////////////////////////////////////
 /////////////////////Methoden/////////////////////
@@ -37,7 +37,7 @@ float temperatur = 0; // Temperatur des Temperatursensors
 * Name: display_text 
 * Erstellt von Mirko
 * 
-* Funktion: Diese Funktion dient der Ausgabe von Text.
+* Funktion: Diese Funktion dient der vereinfachten Ausgabe von Text.
 * 
 * Input:
 *		String: Text welcher auf dem Display ausgegeben werden soll.
@@ -56,27 +56,60 @@ void display_text(String text) {
 	}
 }
 
-void sonderzeichen() // Trägt in das CGRAM ein
-{
-	write_instr(0x40); //CGRAM auf 0 stellen
-	for (int i = 0; i <= 7; i++) { //Zeilen 0...7
-		write_char(pfeilnu[i]); //Zeilen 0...7 des Sonderzeichen an das CGRAM senden
+/* 
+* Name: sonderzeichen
+* Erstellt von Patrick
+* 
+* Funktion: Programmiert Sonderzeichen in das CGRAM des Displays.
+* 
+* Input: -
+*
+* Output: -
+*/
+void sonderzeichen() {
+	write_instr(0x40); // Die CGRAM auf Addresse 0 stellen
+	for (int i = 0; i <= 7; i++) { // Zeile auswählen und um eine weitere Zeile erhöhen
+		write_char(pfeilnu[i]); // Ausgewählte Zeile an CGRAM senden
 	}
 
-	for (int i = 0; i <= 7; i++) { //Zeilen 0...7
-		write_char(my[i]); //Zeilen 0...7 des Sonderzeichen an das CGRAM senden
+	for (int i = 0; i <= 7; i++) { // Zeile auswählen und um eine weitere Zeile erhöhen
+		write_char(my[i]); // Ausgewählte Zeile an CGRAM senden
 	}
 }
 
+/* 
+* Name: FeinstaubsensorMessung 
+* Erstellt von Patrick
+* 
+* Funktion: Es speichert anhand des deklarierten SoftwareSerial Ports die eingehenden Daten
+* 			und verarbeitet diese zu den verschiedenen Feinstaubarten. Die Werte werden in
+* 			folgenden Globale Variablen gespeichert:
+*			SDS_PM25
+*			SDS_PM10
+* 
+* Input: -
+*
+* Output: -
+*/
 void FeinstaubsensorMessung() {
 
 }
 
-void TemperatursensorMessung() {
-	temperatur = Temperatursensor.readTemperature();
-	luftfeuchtigkeit = Temperatursensor.readHumidity();
-	Serial.println(temperatur);
-	Serial.println(luftfeuchtigkeit);
+/* 
+* Name: display_text 
+* Erstellt von Mirko
+* 
+* Funktion: Diese Funktion dient der Ausgabe von Text.
+* 
+* Input: -
+*
+* Output: -
+*/
+void DHT_TemperatursensorMessung() {
+	DHT_Temperatur = DHT_Temperatursensor.readTemperature();
+	DHT_Luftfeuchtigkeit = DHT_Temperatursensor.readHumidity();
+	Serial.println(DHT_Temperatur);
+	Serial.println(DHT_Luftfeuchtigkeit);
 }
 
 //////////////////////////////////////////////////
@@ -94,10 +127,12 @@ void setup() {
 	DDRC = B01000000; // Eingang/Ausgang Feinstaubsensor NOCH ANPASSEN
 	
 	// Sensoren
-	Temperatursensor.begin();
+	DHT_Temperatursensor.begin();
 
 	// Terminal/Konsole
 	Serial.begin(9600);
+
+	delay(1000); // 1 Sekunde warten bevor das Hauptprogramm dauerhaft ausgeführt wird damit alles ordungsgemäß funktioniert
 }
 /* Unser Hauptprogramm. Hier wird alles wiederholt ausgeführt solange kein Interrupt dies unterbrechen sollte. */
 void loop() {
@@ -115,7 +150,7 @@ void loop() {
 	display_pos(0x0A);
 	display_text("PM2.5:$"); // "PM2.5:"
 	display_pos(0x4A);
-	display_text(String(value_PM25)+"$"); // Wert von PM2.5 ausgeben
+	display_text(String(SDS_PM25)+"$"); // Wert von PM2.5 ausgeben
 
 	delay(2000);
 
@@ -131,24 +166,24 @@ void loop() {
 	display_pos(0x0A);
 	display_text("PM10:$"); // "PM10:"
 	display_pos(0x4A);
-	display_text(String(value_PM10)+"$"); // Wert von PM10 ausgeben
+	display_text(String(SDS_PM10)+"$"); // Wert von PM10 ausgeben
 
 	delay(2000);
-	TemperatursensorMessung();
+	DHT_TemperatursensorMessung();
 
 	write_instr(0x01); // Display löschen
 
-	// "Temperatur" anzeigen
+	// "DHT_Temperatur" anzeigen
 	display_pos(0x00);					
-	display_text("Temperatur$");		// "Feinstaub-"
+	display_text("DHT_Temperatur$");		// "Feinstaub-"
 	display_pos(0x40);					
-	display_text(String(temperatur)+"$"); 		// "daten:"
+	display_text(String(DHT_Temperatur)+"$"); 		// "daten:"
 
 	// PM10 sowie den Wert davon anzeigen
 	display_pos(0x0A);
 	display_text("Humidity:$"); // "PM10:"
 	display_pos(0x4A);
-	display_text(String(luftfeuchtigkeit)+"$"); // Wert von PM10 ausgeben
+	display_text(String(DHT_Luftfeuchtigkeit)+"$"); // Wert von PM10 ausgeben
 
 	delay(2000);
 }
