@@ -18,14 +18,14 @@
 #define Zeile_4 0x4A
 
 SoftwareSerial FeinstaubsensorPort = SoftwareSerial(PORTC5/*rxPin*/, PORTC6/*txPin*/); // Feinstaubsensor
-DHT Temperatursensor (0, DHT22);
+DHT Temperatursensor (0, DHT22); // Temperatursensor
 
 //////////////////////////////////////////////////
 ////////////////////Variables/////////////////////
 //////////////////////////////////////////////////
 
-int value_PM25 = 0; // PM2.5 Wert des Feinstaubssensors 
-int value_PM10 = 0; // PM10 Wert des Feinstaubssensors 
+float value_PM25 = 0; // PM2.5 Wert des Feinstaubssensors 
+float value_PM10 = 0; // PM10 Wert des Feinstaubssensors 
 float luftfeuchtigkeit = 0; // Luftfeuchtigkeit des Temperatursensors
 float temperatur = 0; // Temperatur des Temperatursensors
 
@@ -33,25 +33,9 @@ float temperatur = 0; // Temperatur des Temperatursensors
 /////////////////////Methoden/////////////////////
 //////////////////////////////////////////////////
 
-/*
-void display_text(int text_nr) {
-	unsigned char tab;                      	//Lokale Zï¿œhlvariable tab deklarieren/
-
-	ptr_hilfe = ptr_text[text_nr];          	//Text-Zeiger auf Anfangsadresse von Display_Texttext_nr
-												//setzen und Adresse an Hilfe-Zeiger ï¿œbergeben
-	tab = 0;
-	while ( *(ptr_hilfe + tab) != '$' )     	//Wiederhole solange der Hilfe-Zeiger nicht auf dem
-		{
-												//Zeichen "$" steht
-
-		write_char(*(ptr_hilfe + tab));     	//Zeichen an der Position des Hilfe-Zeigers an die Anzeige
-		tab++;                              	//senden Adresse des Hilfezeigers umn 1 erhï¿œhen
-		}
-}
-*/
-
 /* 
 * Name: display_text 
+* Erstellt von Mirko
 * 
 * Funktion: Diese Funktion dient der Ausgabe von Text.
 * 
@@ -68,6 +52,7 @@ void display_text(String text) {
 		write_char(character); // Ausgewählter Buchstabe/Zeichen auf display ausgeben
 		character = text.charAt(0); // Ersten Buchstaben/Zeichen auswählen
 		text.remove(0, 1); // Entferne ersten Buchstaben/Zeichen welcher ausgewählt wurde
+		Serial.print(character);
 	}
 }
 
@@ -90,6 +75,8 @@ void FeinstaubsensorMessung() {
 void TemperatursensorMessung() {
 	temperatur = Temperatursensor.readTemperature();
 	luftfeuchtigkeit = Temperatursensor.readHumidity();
+	Serial.println(temperatur);
+	Serial.println(luftfeuchtigkeit);
 }
 
 //////////////////////////////////////////////////
@@ -108,9 +95,13 @@ void setup() {
 	
 	// Sensoren
 	Temperatursensor.begin();
+
+	// Terminal/Konsole
+	Serial.begin(9600);
 }
 /* Unser Hauptprogramm. Hier wird alles wiederholt ausgeführt solange kein Interrupt dies unterbrechen sollte. */
 void loop() {
+	FeinstaubsensorMessung();
 
 	write_instr(0x01); // Display löschen
 
@@ -143,6 +134,7 @@ void loop() {
 	display_text(String(value_PM10)+"$"); // Wert von PM10 ausgeben
 
 	delay(2000);
+	TemperatursensorMessung();
 
 	write_instr(0x01); // Display löschen
 
