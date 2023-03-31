@@ -2,10 +2,11 @@
 /////////////////////Includes/////////////////////
 //////////////////////////////////////////////////
 
-#include <stdlib.h>
-#include <Arduino.h>
 #include <display4_ard_logo.h>
 #include <display.h>
+#include <SoftwareSerial.h>
+#include <DHT.h>
+#include <Arduino.h>
 
 //////////////////////////////////////////////////
 /////////////////////Defines//////////////////////
@@ -16,12 +17,17 @@
 #define Zeile_3 0x0A
 #define Zeile_4 0x4A
 
+SoftwareSerial FeinstaubsensorPort = SoftwareSerial(PORTC5/*rxPin*/, PORTC6/*txPin*/); // Feinstaubsensor
+DHT Temperatursensor (0, DHT22);
+
 //////////////////////////////////////////////////
 ////////////////////Variables/////////////////////
 //////////////////////////////////////////////////
 
-int value_PM25; // PM2.5 Wert des Feinstaubssensors 
-int value_PM10; // PM10 Wert des Feinstaubssensors 
+int value_PM25 = 0; // PM2.5 Wert des Feinstaubssensors 
+int value_PM10 = 0; // PM10 Wert des Feinstaubssensors 
+float luftfeuchtigkeit = 0; // Luftfeuchtigkeit des Temperatursensors
+float temperatur = 0; // Temperatur des Temperatursensors
 
 //////////////////////////////////////////////////
 /////////////////////Methoden/////////////////////
@@ -58,10 +64,9 @@ void display_text(int text_nr) {
 void display_text(String text) {
 	char character = text.charAt(0); // Ersten Buchstaben/Zeichen auswählen
 	text.remove(0, 1); // Entferne ersten Buchstaben/Zeichen welcher ausgewählt wurde
-	while(character =! "$") { // Nur solange der ausgewählte Buchstabe/Zeichen nicht das endungszeichen "$" ist, write_char ausführen
+	while(character != '$') { // Nur solange der ausgewählte Buchstabe/Zeichen nicht das endungszeichen "$" ist, write_char ausführen
 		write_char(character); // Ausgewählter Buchstabe/Zeichen auf display ausgeben
-		character = NULL; // Ausgewähter Buchstabe/Zeichen wieder entfernen damit der nächste sicher ausgewählt werden kann
-		char character = text.charAt(0); // Ersten Buchstaben/Zeichen auswählen
+		character = text.charAt(0); // Ersten Buchstaben/Zeichen auswählen
 		text.remove(0, 1); // Entferne ersten Buchstaben/Zeichen welcher ausgewählt wurde
 	}
 }
@@ -78,6 +83,15 @@ void sonderzeichen() // Trägt in das CGRAM ein
 	}
 }
 
+void FeinstaubsensorMessung() {
+
+}
+
+void TemperatursensorMessung() {
+	temperatur = Temperatursensor.readTemperature();
+	luftfeuchtigkeit = Temperatursensor.readHumidity();
+}
+
 //////////////////////////////////////////////////
 ///////////////////////Main///////////////////////
 //////////////////////////////////////////////////
@@ -90,7 +104,10 @@ void setup() {
 	// Port Ein-/Ausgänge
 	DDRA = 0xFF; // Ausgang Display
 	DDRB = 0xFF; // Ausgang Display
-	//DDRC = B00000000; // Eingang/Ausgang Feinstaubsensor NOCH ANPASSEN
+	DDRC = B01000000; // Eingang/Ausgang Feinstaubsensor NOCH ANPASSEN
+	
+	// Sensoren
+	Temperatursensor.begin();
 }
 /* Unser Hauptprogramm. Hier wird alles wiederholt ausgeführt solange kein Interrupt dies unterbrechen sollte. */
 void loop() {
@@ -109,5 +126,37 @@ void loop() {
 	display_pos(0x4A);
 	display_text(String(value_PM25)+"$"); // Wert von PM2.5 ausgeben
 
-	delay(1000);
+	delay(2000);
+
+	write_instr(0x01); // Display löschen
+
+	// "Feinstaubdaten" anzeigen
+	display_pos(0x00);					
+	display_text("Feinstaub-$");		// "Feinstaub-"
+	display_pos(0x40);					
+	display_text("daten:$"); 		// "daten:"
+
+	// PM10 sowie den Wert davon anzeigen
+	display_pos(0x0A);
+	display_text("PM10:$"); // "PM10:"
+	display_pos(0x4A);
+	display_text(String(value_PM10)+"$"); // Wert von PM10 ausgeben
+
+	delay(2000);
+
+	write_instr(0x01); // Display löschen
+
+	// "Temperatur" anzeigen
+	display_pos(0x00);					
+	display_text("Temperatur$");		// "Feinstaub-"
+	display_pos(0x40);					
+	display_text(String(temperatur)+"$"); 		// "daten:"
+
+	// PM10 sowie den Wert davon anzeigen
+	display_pos(0x0A);
+	display_text("Humidity:$"); // "PM10:"
+	display_pos(0x4A);
+	display_text(String(luftfeuchtigkeit)+"$"); // Wert von PM10 ausgeben
+
+	delay(2000);
 }
