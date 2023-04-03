@@ -33,18 +33,12 @@ float DHT_Temperatur = 0; // DHT_Temperatur des DHT_Temperatursensors
 /////////////////////Methoden/////////////////////
 //////////////////////////////////////////////////
 
-/* 
-* Name: display_text 
-* Erstellt von Mirko
-* 
-* Funktion: Diese Funktion dient der vereinfachten Ausgabe von Text.
-* 
-* Input:
-*		String: Text welcher auf dem Display ausgegeben werden soll.
-*				WICHTIG: Das Zeichen "$" endet die Ausgabe. Dieser muss mit in dem String stehen!
-*
-* Output: -
-*/
+/**
+ * @brief Diese Funktion dient der vereinfachten Ausgabe von Text.
+ * 
+ * @param text 
+ * 		  Text welcher auf dem Display ausgegeben werden soll.
+ */
 void display_text(String text) {
 	char character = text.charAt(0); // Ersten Buchstaben/Zeichen auswählen
 	text.remove(0, 1); // Entferne ersten Buchstaben/Zeichen welcher ausgewählt wurde
@@ -56,16 +50,9 @@ void display_text(String text) {
 	}
 }
 
-/* 
-* Name: sonderzeichen
-* Erstellt von Patrick
-* 
-* Funktion: Programmiert Sonderzeichen in das CGRAM des Displays.
-* 
-* Input: -
-*
-* Output: -
-*/
+/**
+ * @brief Programmiert Sonderzeichen in das CGRAM des Displays.
+ */
 void sonderzeichen() {
 	write_instr(0x40); // Die CGRAM auf Addresse 0 stellen
 	for (int i = 0; i <= 7; i++) { // Zeile auswählen und um eine weitere Zeile erhöhen
@@ -74,6 +61,10 @@ void sonderzeichen() {
 
 	for (int i = 0; i <= 7; i++) { // Zeile auswählen und um eine weitere Zeile erhöhen
 		write_char(my[i]); // Ausgewählte Zeile an CGRAM senden
+	}
+
+	for (int i = 0; i <= 7; i++) { // Zeile auswählen und um eine weitere Zeile erhöhen
+		write_char(hoch3[i]); // Ausgewählte Zeile an CGRAM senden
 	}
 }
 
@@ -91,20 +82,23 @@ void sonderzeichen() {
 *
 * Output: -
 */
+
+/**
+ * @brief Es speichert anhand des deklarierten SoftwareSerial Ports die eingehenden Daten
+* 		  und verarbeitet diese zu den verschiedenen Feinstaubarten. Die Werte werden in
+* 	   	  folgenden Globale Variablen gespeichert:
+*		  SDS_PM25
+*		  SDS_PM10
+ * 
+ */
 void FeinstaubsensorMessung() {
 
 }
 
-/* 
-* Name: display_text 
-* Erstellt von Mirko
-* 
-* Funktion: Diese Funktion dient der Ausgabe von Text.
-* 
-* Input: -
-*
-* Output: -
-*/
+/**
+ * @brief Sie misst die Temperatur und Luftfeuchtigkeit des DHT22 Sensors und speichert diese in globalen Variablen.
+ * 
+ */
 void DHT_TemperatursensorMessung() {
 	DHT_Temperatur = DHT_Temperatursensor.readTemperature();
 	DHT_Luftfeuchtigkeit = DHT_Temperatursensor.readHumidity();
@@ -119,7 +113,7 @@ void DHT_TemperatursensorMessung() {
 /* Hier wird alles einmal ausgeführt vor dem Hauptprogramm. Demnach ist dies unsere Initialisierung. */
 void setup() {
 	lcd_init();
-	sonderzeichen(); // vlt mit init umtauschen?
+	sonderzeichen();
 
 	// Port Ein-/Ausgänge
 	DDRA = 0xFF; // Ausgang Display
@@ -134,6 +128,7 @@ void setup() {
 
 	delay(1000); // 1 Sekunde warten bevor das Hauptprogramm dauerhaft ausgeführt wird damit alles ordungsgemäß funktioniert
 }
+
 /* Unser Hauptprogramm. Hier wird alles wiederholt ausgeführt solange kein Interrupt dies unterbrechen sollte. */
 void loop() {
 	FeinstaubsensorMessung();
