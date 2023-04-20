@@ -1,10 +1,10 @@
 #include <Arduino.h>
 
-//Makros//
-#define BEFEHL()(PORTB&=0xFE)               //PB0='0'->RS=0 ->Befehl
-#define ZEICHEN()(PORTB|=0x01)              //PB0='1'->Zeichen
-#define FREIGABE()(PORTB|=0x02)             //PB1=1->E=1->Datenbus freigeben
-#define SPERREN()(PORTB&=0xFD)              //PB1=0->E=0->Datenbus sperren 
+//Makros
+#define BEFEHL()(PORTB&=B11111110)               //PB0='0'->RS=0 ->Befehl
+#define ZEICHEN()(PORTB|=B00000001)              //PB0='1'->Zeichen
+#define FREIGABE()(PORTB|=B00000010)             //PB1=1->E=1->Datenbus freigeben
+#define SPERREN()(PORTB&=B11111101)              //PB1=0->E=0->Datenbus sperren 
 
 
                         

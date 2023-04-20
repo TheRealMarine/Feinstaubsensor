@@ -17,7 +17,7 @@
 #define Zeile_3 0x0A
 #define Zeile_4 0x4A
 
-SoftwareSerial SDS_FeinstaubsensorPort = SoftwareSerial(PORTC5/*rxPin*/, PORTC6/*txPin*/); // Feinstaubsensor
+SoftwareSerial SDS_FeinstaubsensorPort = SoftwareSerial(PORTD1/*rxPin*/, PORTD0/*txPin*/); // Feinstaubsensor
 DHT DHT_Temperatursensor (0, DHT22); // DHT_Temperatursensor
 
 //////////////////////////////////////////////////
@@ -40,13 +40,15 @@ float DHT_Temperatur = 0; // DHT_Temperatur des DHT_Temperatursensors
  * 		  Text welcher auf dem Display ausgegeben werden soll.
  */
 void display_text(String text) {
+	//Serial.print(text);
 	char character = text.charAt(0); // Ersten Buchstaben/Zeichen auswählen
+	//Serial.print(character);
 	text.remove(0, 1); // Entferne ersten Buchstaben/Zeichen welcher ausgewählt wurde
 	while(character != '$') { // Nur solange der ausgewählte Buchstabe/Zeichen nicht das endungszeichen "$" ist, write_char ausführen
+		//Serial.print(character);
 		write_char(character); // Ausgewählter Buchstabe/Zeichen auf display ausgeben
 		character = text.charAt(0); // Ersten Buchstaben/Zeichen auswählen
 		text.remove(0, 1); // Entferne ersten Buchstaben/Zeichen welcher ausgewählt wurde
-		Serial.print(character);
 	}
 }
 
@@ -68,31 +70,17 @@ void sonderzeichen() {
 	}
 }
 
-/* 
-* Name: FeinstaubsensorMessung 
-* Erstellt von Patrick
-* 
-* Funktion: Es speichert anhand des deklarierten SoftwareSerial Ports die eingehenden Daten
-* 			und verarbeitet diese zu den verschiedenen Feinstaubarten. Die Werte werden in
-* 			folgenden Globale Variablen gespeichert:
-*			SDS_PM25
-*			SDS_PM10
-* 
-* Input: -
-*
-* Output: -
-*/
-
 /**
  * @brief Es speichert anhand des deklarierten SoftwareSerial Ports die eingehenden Daten
-* 		  und verarbeitet diese zu den verschiedenen Feinstaubarten. Die Werte werden in
-* 	   	  folgenden Globale Variablen gespeichert:
-*		  SDS_PM25
-*		  SDS_PM10
+ * 		  und verarbeitet diese zu den verschiedenen Feinstaubarten. Die Werte werden in
+ * 	   	  folgenden Globale Variablen gespeichert:
+ *		  SDS_PM25
+ *		  SDS_PM10
  * 
  */
 void FeinstaubsensorMessung() {
-
+	//byte Feinstaub = SDS_FeinstaubsensorPort.readBytes();
+	Serial.print(SDS_FeinstaubsensorPort.read());
 }
 
 /**
@@ -102,8 +90,8 @@ void FeinstaubsensorMessung() {
 void DHT_TemperatursensorMessung() {
 	DHT_Temperatur = DHT_Temperatursensor.readTemperature();
 	DHT_Luftfeuchtigkeit = DHT_Temperatursensor.readHumidity();
-	Serial.println(DHT_Temperatur);
-	Serial.println(DHT_Luftfeuchtigkeit);
+	//Serial.println(DHT_Temperatur);
+	//Serial.println(DHT_Luftfeuchtigkeit);
 }
 
 //////////////////////////////////////////////////
@@ -112,34 +100,38 @@ void DHT_TemperatursensorMessung() {
 
 /* Hier wird alles einmal ausgeführt vor dem Hauptprogramm. Demnach ist dies unsere Initialisierung. */
 void setup() {
-	lcd_init();
-	sonderzeichen();
-
 	// Port Ein-/Ausgänge
 	DDRA = 0xFF; // Ausgang Display
 	DDRB = 0xFF; // Ausgang Display
-	DDRC = B01000000; // Eingang/Ausgang Feinstaubsensor NOCH ANPASSEN
+	DDRC = 0xFD; // Eingang/Ausgang Feinstaubsensor
 	
 	// Sensoren
 	DHT_Temperatursensor.begin();
+	SDS_FeinstaubsensorPort.begin((long)9600);
 
 	// Terminal/Konsole
 	Serial.begin(9600);
+
+	// Weitere Inits
+	lcd_init();
+	sonderzeichen();
 
 	delay(1000); // 1 Sekunde warten bevor das Hauptprogramm dauerhaft ausgeführt wird damit alles ordungsgemäß funktioniert
 }
 
 /* Unser Hauptprogramm. Hier wird alles wiederholt ausgeführt solange kein Interrupt dies unterbrechen sollte. */
 void loop() {
+	
+	/*
 	FeinstaubsensorMessung();
 
 	write_instr(0x01); // Display löschen
 
 	// "Feinstaubdaten" anzeigen
 	display_pos(0x00);					
-	display_text("Feinstaub-$");		// "Feinstaub-"
+	display_text("Feinstaub-$"); // "Feinstaub-"
 	display_pos(0x40);					
-	display_text("daten:$"); 		// "daten:"
+	display_text("daten:$"); // "daten:"
 
 	// PM2.5 sowie den Wert davon anzeigen
 	display_pos(0x0A);
@@ -153,9 +145,9 @@ void loop() {
 
 	// "Feinstaubdaten" anzeigen
 	display_pos(0x00);					
-	display_text("Feinstaub-$");		// "Feinstaub-"
+	display_text("Feinstaub-$"); // "Feinstaub-"
 	display_pos(0x40);					
-	display_text("daten:$"); 		// "daten:"
+	display_text("daten:$"); // "daten:"
 
 	// PM10 sowie den Wert davon anzeigen
 	display_pos(0x0A);
@@ -170,9 +162,9 @@ void loop() {
 
 	// "DHT_Temperatur" anzeigen
 	display_pos(0x00);					
-	display_text("DHT_Temperatur$");		// "Feinstaub-"
+	display_text("DHT_Temperatur$"); // "Feinstaub-"
 	display_pos(0x40);					
-	display_text(String(DHT_Temperatur)+"$"); 		// "daten:"
+	display_text(String(DHT_Temperatur)+"$"); // "daten:"
 
 	// PM10 sowie den Wert davon anzeigen
 	display_pos(0x0A);
@@ -181,4 +173,5 @@ void loop() {
 	display_text(String(DHT_Luftfeuchtigkeit)+"$"); // Wert von PM10 ausgeben
 
 	delay(2000);
+	*/
 }
