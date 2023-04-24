@@ -2,7 +2,6 @@
 /////////////////////Includes/////////////////////
 //////////////////////////////////////////////////
 
-#include <display4_ard_logo.h>
 #include <display.h>
 #include <SoftwareSerial.h>
 #include <DHT.h>
@@ -17,8 +16,7 @@
 #define Zeile_3 0x0A
 #define Zeile_4 0x4A
 
-SoftwareSerial SDS_FeinstaubsensorPort = SoftwareSerial(PORTD1/*rxPin*/, PORTD0/*txPin*/); // Feinstaubsensor
-DHT DHT_Temperatursensor (0, DHT22); // DHT_Temperatursensor
+//DHT DHT_Temperatursensor (0, DHT22); // DHT_Temperatursensor
 
 //////////////////////////////////////////////////
 ////////////////////Variables/////////////////////
@@ -28,6 +26,8 @@ float SDS_PM25 = 0; // PM2.5 Wert des Feinstaubssensors
 float SDS_PM10 = 0; // PM10 Wert des Feinstaubssensors 
 float DHT_Luftfeuchtigkeit = 0; // DHT_Luftfeuchtigkeit des DHT_Temperatursensors
 float DHT_Temperatur = 0; // DHT_Temperatur des DHT_Temperatursensors
+unsigned char zahl;
+unsigned char Feinstaubsensor_10byte[10];
 
 //////////////////////////////////////////////////
 /////////////////////Methoden/////////////////////
@@ -65,9 +65,9 @@ void sonderzeichen() {
 		write_char(my[i]); // Ausgewählte Zeile an CGRAM senden
 	}
 
-	for (int i = 0; i <= 7; i++) { // Zeile auswählen und um eine weitere Zeile erhöhen
+	/*for (int i = 0; i <= 7; i++) { // Zeile auswählen und um eine weitere Zeile erhöhen
 		write_char(hoch3[i]); // Ausgewählte Zeile an CGRAM senden
-	}
+	}*/
 }
 
 /**
@@ -78,9 +78,25 @@ void sonderzeichen() {
  *		  SDS_PM10
  * 
  */
-void FeinstaubsensorMessung() {
-	//byte Feinstaub = SDS_FeinstaubsensorPort.readBytes();
-	Serial.print(SDS_FeinstaubsensorPort.read());
+void rs232_rec() {
+    int k;
+  	int i;
+  
+  	for(i = 0; i <= 9; i++) {
+		PORTB = 0x0F;
+      	while (PIND1==1) {}                                  //Auf Startbit warten
+		Serial.println(0xFF);
+		delayMicroseconds(110);                                      //Auf die "Mitte" von Bit0 warten (104+104/2)
+          zahl = 0;
+          for(k=0;k <= 7;k++) {                                //Wiederhole 8x    
+            zahl = zahl >> 1;                            //Inhalt von zahl rechtsschieben ("alte" Bits sichern). An der Stelle zahl.7 wird eine 0 nachgeschoben
+            if (PIND1==1) {                                 //Falls RxD=1, zahl.7 setzen                 
+                zahl = zahl | 0x80;
+            }
+            delayMicroseconds(104);                                //Warte bis zur "Mitte" des n?chsten Bits
+        }
+          Feinstaubsensor_10byte[i] = zahl;
+    }
 }
 
 /**
@@ -88,8 +104,8 @@ void FeinstaubsensorMessung() {
  * 
  */
 void DHT_TemperatursensorMessung() {
-	DHT_Temperatur = DHT_Temperatursensor.readTemperature();
-	DHT_Luftfeuchtigkeit = DHT_Temperatursensor.readHumidity();
+	//DHT_Temperatur = DHT_Temperatursensor.readTemperature();
+	//DHT_Luftfeuchtigkeit = DHT_Temperatursensor.readHumidity();
 	//Serial.println(DHT_Temperatur);
 	//Serial.println(DHT_Luftfeuchtigkeit);
 }
@@ -103,11 +119,10 @@ void setup() {
 	// Port Ein-/Ausgänge
 	DDRA = 0xFF; // Ausgang Display
 	DDRB = 0xFF; // Ausgang Display
-	DDRC = 0xFD; // Eingang/Ausgang Feinstaubsensor
+	DDRD = 0xFD; // Eingang/Ausgang Feinstaubsensor
 	
 	// Sensoren
-	DHT_Temperatursensor.begin();
-	SDS_FeinstaubsensorPort.begin((long)9600);
+	//DHT_Temperatursensor.begin();
 
 	// Terminal/Konsole
 	Serial.begin(9600);
@@ -122,8 +137,8 @@ void setup() {
 /* Unser Hauptprogramm. Hier wird alles wiederholt ausgeführt solange kein Interrupt dies unterbrechen sollte. */
 void loop() {
 	
-	/*
-	FeinstaubsensorMessung();
+	rs232_rec();
+	SDS_PM25 = (Feinstaubsensor_10byte[3]*256)+(Feinstaubsensor_10byte[2]/10);
 
 	write_instr(0x01); // Display löschen
 
@@ -139,7 +154,7 @@ void loop() {
 	display_pos(0x4A);
 	display_text(String(SDS_PM25)+"$"); // Wert von PM2.5 ausgeben
 
-	delay(2000);
+	delay(4000);
 
 	write_instr(0x01); // Display löschen
 
@@ -155,7 +170,7 @@ void loop() {
 	display_pos(0x4A);
 	display_text(String(SDS_PM10)+"$"); // Wert von PM10 ausgeben
 
-	delay(2000);
+	delay(4000);
 	DHT_TemperatursensorMessung();
 
 	write_instr(0x01); // Display löschen
@@ -172,6 +187,6 @@ void loop() {
 	display_pos(0x4A);
 	display_text(String(DHT_Luftfeuchtigkeit)+"$"); // Wert von PM10 ausgeben
 
-	delay(2000);
-	*/
+	delay(4000);
+	
 }
