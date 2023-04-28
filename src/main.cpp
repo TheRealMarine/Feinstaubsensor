@@ -78,26 +78,7 @@ void sonderzeichen() {
  *		  SDS_PM10
  * 
  */
-void rs232_rec() {
-    int k;
-  	int i;
-  
-  	for(i = 0; i <= 9; i++) {
-		PORTB = 0x0F;
-      	while (PIND1==1) {}                                  //Auf Startbit warten
-		Serial.println(0xFF);
-		delayMicroseconds(110);                                      //Auf die "Mitte" von Bit0 warten (104+104/2)
-          zahl = 0;
-          for(k=0;k <= 7;k++) {                                //Wiederhole 8x    
-            zahl = zahl >> 1;                            //Inhalt von zahl rechtsschieben ("alte" Bits sichern). An der Stelle zahl.7 wird eine 0 nachgeschoben
-            if (PIND1==1) {                                 //Falls RxD=1, zahl.7 setzen                 
-                zahl = zahl | 0x80;
-            }
-            delayMicroseconds(104);                                //Warte bis zur "Mitte" des n?chsten Bits
-        }
-          Feinstaubsensor_10byte[i] = zahl;
-    }
-}
+
 
 /**
  * @brief Sie misst die Temperatur und Luftfeuchtigkeit des DHT22 Sensors und speichert diese in globalen Variablen.
@@ -137,8 +118,8 @@ void setup() {
 /* Unser Hauptprogramm. Hier wird alles wiederholt ausgeführt solange kein Interrupt dies unterbrechen sollte. */
 void loop() {
 	
-	rs232_rec();
-	SDS_PM25 = (Feinstaubsensor_10byte[3]*256)+(Feinstaubsensor_10byte[2]/10);
+	//rs232_rec();
+	//SDS_PM25 = (Feinstaubsensor_10byte[3]*256)+(Feinstaubsensor_10byte[2]/10);
 
 	write_instr(0x01); // Display löschen
 
