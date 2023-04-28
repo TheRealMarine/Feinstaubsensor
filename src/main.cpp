@@ -100,7 +100,8 @@ void setup() {
 	// Port Ein-/Ausgänge
 	DDRA = 0xFF; // Ausgang Display
 	DDRB = 0xFF; // Ausgang Display
-	DDRD = 0xFD; // Eingang/Ausgang Feinstaubsensor
+	DDRC = 0xFD; // Eingang/Ausgang Feinstaubsensor
+
 	
 	// Sensoren
 	//DHT_Temperatursensor.begin();
@@ -112,6 +113,9 @@ void setup() {
 	lcd_init();
 	sonderzeichen();
 
+	// Softwareserials
+	// Temperatur/Humidity sensor
+
 	delay(1000); // 1 Sekunde warten bevor das Hauptprogramm dauerhaft ausgeführt wird damit alles ordungsgemäß funktioniert
 }
 
@@ -122,6 +126,13 @@ void loop() {
 	//SDS_PM25 = (Feinstaubsensor_10byte[3]*256)+(Feinstaubsensor_10byte[2]/10);
 
 	write_instr(0x01); // Display löschen
+
+
+	display_pos(Zeile_1);
+	display_text("Startbit$");
+	while (PINC1 != 0) {  };
+	write_instr(0x01);
+
 
 	// "Feinstaubdaten" anzeigen
 	display_pos(0x00);					
