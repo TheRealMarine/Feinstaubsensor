@@ -7,10 +7,10 @@ char const pfeilnu[] =  {0x04, 0x04, 0x04, 0x04, 0x15, 0x0E, 0x04, 0x00};
 char const my[] =       {0x00, 0x00, 0x09, 0x09, 0x09, 0x0E, 0x08, 0x08};
 
 //Makros//
-#define BEFEHL()(PORTB&=0xFE)               //PB0='0'->RS=0 ->Befehl
-#define ZEICHEN()(PORTB|=0x01)              //PB0='1'->Zeichen
-#define FREIGABE()(PORTB|=0x02)             //PB1=1->E=1->Datenbus freigeben
-#define SPERREN()(PORTB&=0xFD)              //PB1=0->E=0->Datenbus sperren 
+#define BEFEHL()(PORTC&=0xFE)               //PB0='0'->RS=0 ->Befehl
+#define ZEICHEN()(PORTC|=0x01)              //PB0='1'->Zeichen
+#define FREIGABE()(PORTC|=0x02)             //PB1=1->E=1->Datenbus freigeben
+#define SPERREN()(PORTC&=0xFD)              //PB1=0->E=0->Datenbus sperren 
 
 
                         

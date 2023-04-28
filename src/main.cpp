@@ -91,6 +91,33 @@ void DHT_TemperatursensorMessung() {
 	//Serial.println(DHT_Luftfeuchtigkeit);
 }
 
+void rs232_rec(void) {
+    int k;
+  	int i;
+  
+  	for(i = 0; i <= 9; i++) {
+      	while (PINC1==1) {}                                  //Auf Startbit warten  
+    
+        delayMicroseconds(110);                                      //Auf die "Mitte" von Bit0 warten (104+104/2)
+          zahl = 0;
+          for(k=0;k <= 7;k++) {                                //Wiederhole 8x    
+            zahl = zahl >> 1;                            //Inhalt von zahl rechtsschieben ("alte" Bits sichern). An der Stelle zahl.7 wird eine 0 nachgeschoben
+            if (PINC1==1) {                                 //Falls RxD=1, zahl.7 setzen                 
+                zahl = zahl | 0b10000000;
+            }
+            delayMicroseconds(104);                                //Warte bis zur "Mitte" des n?chsten Bits
+        }
+        Feinstaubsensor_10byte[i] = zahl;
+		//Serial.print(zahl);
+    } 
+	Serial.print(Feinstaubsensor_10byte[0]);
+	Serial.println(Feinstaubsensor_10byte[1]);
+	Serial.print(Feinstaubsensor_10byte[3]);
+	Serial.println(Feinstaubsensor_10byte[2]);
+	Serial.println();
+ 
+}
+
 //////////////////////////////////////////////////
 ///////////////////////Main///////////////////////
 //////////////////////////////////////////////////
@@ -99,8 +126,8 @@ void DHT_TemperatursensorMessung() {
 void setup() {
 	// Port Ein-/Ausgänge
 	DDRA = 0xFF; // Ausgang Display
-	DDRB = 0xFF; // Ausgang Display
-	DDRC = 0xFD; // Eingang/Ausgang Feinstaubsensor
+	DDRC = 0xFF; // Ausgang Display
+	DDRB = 0xFD; // Eingang/Ausgang Feinstaubsensor
 
 	
 	// Sensoren
@@ -128,10 +155,10 @@ void loop() {
 	write_instr(0x01); // Display löschen
 
 
-	display_pos(Zeile_1);
-	display_text("Startbit$");
-	while (PINC1 != 0) {  };
-	write_instr(0x01);
+	//display_pos(Zeile_1);
+	//display_text("Startbit$");
+	//while (PINC != 0) {  };
+	//write_instr(0x01);
 
 
 	// "Feinstaubdaten" anzeigen
