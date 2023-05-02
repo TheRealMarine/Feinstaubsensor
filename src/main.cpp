@@ -4,7 +4,6 @@
 
 #include <display.h>
 #include <SoftwareSerial.h>
-#include <DHT.h>
 #include <Arduino.h>
 
 //////////////////////////////////////////////////
@@ -15,6 +14,8 @@
 #define Zeile_2 0x40
 #define Zeile_3 0x0A
 #define Zeile_4 0x4A
+
+SoftwareSerial Feinstaubsensor (52, 53);
 
 //DHT DHT_Temperatursensor (0, DHT22); // DHT_Temperatursensor
 
@@ -91,33 +92,6 @@ void DHT_TemperatursensorMessung() {
 	//Serial.println(DHT_Luftfeuchtigkeit);
 }
 
-void rs232_rec(void) {
-    int k;
-  	int i;
-  
-  	for(i = 0; i <= 9; i++) {
-      	while (PINC1==1) {}                                  //Auf Startbit warten  
-    
-        delayMicroseconds(110);                                      //Auf die "Mitte" von Bit0 warten (104+104/2)
-          zahl = 0;
-          for(k=0;k <= 7;k++) {                                //Wiederhole 8x    
-            zahl = zahl >> 1;                            //Inhalt von zahl rechtsschieben ("alte" Bits sichern). An der Stelle zahl.7 wird eine 0 nachgeschoben
-            if (PINC1==1) {                                 //Falls RxD=1, zahl.7 setzen                 
-                zahl = zahl | 0b10000000;
-            }
-            delayMicroseconds(104);                                //Warte bis zur "Mitte" des n?chsten Bits
-        }
-        Feinstaubsensor_10byte[i] = zahl;
-		//Serial.print(zahl);
-    } 
-	Serial.print(Feinstaubsensor_10byte[0]);
-	Serial.println(Feinstaubsensor_10byte[1]);
-	Serial.print(Feinstaubsensor_10byte[3]);
-	Serial.println(Feinstaubsensor_10byte[2]);
-	Serial.println();
- 
-}
-
 //////////////////////////////////////////////////
 ///////////////////////Main///////////////////////
 //////////////////////////////////////////////////
@@ -127,7 +101,7 @@ void setup() {
 	// Port Ein-/Ausgänge
 	DDRA = 0xFF; // Ausgang Display
 	DDRC = 0xFF; // Ausgang Display
-	DDRB = 0xFD; // Eingang/Ausgang Feinstaubsensor
+	DDRB = B11111101; // Eingang/Ausgang Feinstaubsensor
 
 	
 	// Sensoren
@@ -137,21 +111,35 @@ void setup() {
 	Serial.begin(9600);
 
 	// Weitere Inits
-	lcd_init();
-	sonderzeichen();
+	//lcd_init();
+	//sonderzeichen();
 
 	// Softwareserials
+	Feinstaubsensor.begin(9600);
 	// Temperatur/Humidity sensor
 
-	delay(1000); // 1 Sekunde warten bevor das Hauptprogramm dauerhaft ausgeführt wird damit alles ordungsgemäß funktioniert
+	//delay(1000); // 1 Sekunde warten bevor das Hauptprogramm dauerhaft ausgeführt wird damit alles ordungsgemäß funktioniert
 }
 
 /* Unser Hauptprogramm. Hier wird alles wiederholt ausgeführt solange kein Interrupt dies unterbrechen sollte. */
 void loop() {
-	
-	//rs232_rec();
-	//SDS_PM25 = (Feinstaubsensor_10byte[3]*256)+(Feinstaubsensor_10byte[2]/10);
 
+	while (Feinstaubsensor.available()) {
+      while (Feinstaubsensor.read() == 0xAA) {
+        Serial.println("Received");
+        for (int i = 1; i < 10; i++) {
+          Feinstaubsensor_10byte[i] = Feinstaubsensor.read();
+          Serial.println(Feinstaubsensor_10byte[i]);
+        }
+        int PM25 = (Feinstaubsensor_10byte[3]*256)+(Feinstaubsensor_10byte[2]/10);
+        Serial.println(PM25);
+        Serial.println("END");
+        delay(1000);
+      }
+    }
+	
+	// DEBUG END
+/*
 	write_instr(0x01); // Display löschen
 
 
@@ -207,5 +195,7 @@ void loop() {
 	display_text(String(DHT_Luftfeuchtigkeit)+"$"); // Wert von PM10 ausgeben
 
 	delay(4000);
+
+	*/
 	
 }
