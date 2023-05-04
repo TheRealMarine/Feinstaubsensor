@@ -15,60 +15,61 @@
 #define Zeile_3 0x0A
 #define Zeile_4 0x4A
 
-SoftwareSerial Feinstaubsensor (52, 53);
-
-//DHT DHT_Temperatursensor (0, DHT22); // DHT_Temperatursensor
-
-//////////////////////////////////////////////////
-////////////////////Variables/////////////////////
-//////////////////////////////////////////////////
-
-float SDS_PM25 = 0; // PM2.5 Wert des Feinstaubssensors 
-float SDS_PM10 = 0; // PM10 Wert des Feinstaubssensors 
-float DHT_Luftfeuchtigkeit = 0; // DHT_Luftfeuchtigkeit des DHT_Temperatursensors
-float DHT_Temperatur = 0; // DHT_Temperatur des DHT_Temperatursensors
-unsigned char zahl;
-unsigned char Feinstaubsensor_10byte[10];
+SoftwareSerial Feinstaubsensor (52, 53); // Deklarierung des Feinstaubsensors (SDS) an RxD Pin 52 und TxD Pin 53 als SoftwareSerial objekt
+SoftwareSerial Temperatursensor (15, 14); // Deklarierung des Temperatursensors (DHT22) an RxD Pin 15 und TxD Pin 14 als SoftwareSerial objekt
 
 //////////////////////////////////////////////////
-/////////////////////Methoden/////////////////////
+////////////////////Variablen/////////////////////
+//////////////////////////////////////////////////
+
+float SDS_PM25 = 0; // PM2.5 Wert des Feinstaubssensors
+float SDS_PM10 = 0; // PM10 Wert des Feinstaubssensors
+float DHT_Luftfeuchtigkeit = 0; // Luftfeuchtigkeit des DHT_Temperatursensors
+float DHT_Temperatur = 0; // Temperatur des DHT_Temperatursensors
+unsigned char Feinstaubsensor_10byte[10]; // Alle Daten des Feinstaubsensors
+
+//////////////////////////////////////////////////
+////////////////////Funktionen////////////////////
 //////////////////////////////////////////////////
 
 /**
  * @brief Diese Funktion dient der vereinfachten Ausgabe von Text.
- * 
- * @param text 
+ *
+ * @param text
  * 		  Text welcher auf dem Display ausgegeben werden soll.
  */
-void display_text(String text) {
-	//Serial.print(text);
+void display_text(String text)
+{
 	char character = text.charAt(0); // Ersten Buchstaben/Zeichen auswählen
-	//Serial.print(character);
-	text.remove(0, 1); // Entferne ersten Buchstaben/Zeichen welcher ausgewählt wurde
-	while(character != '$') { // Nur solange der ausgewählte Buchstabe/Zeichen nicht das endungszeichen "$" ist, write_char ausführen
-		//Serial.print(character);
-		write_char(character); // Ausgewählter Buchstabe/Zeichen auf display ausgeben
+	text.remove(0, 1);				 // Entferne ersten Buchstaben/Zeichen welcher ausgewählt wurde
+	while (character != '$')		 // Nur solange der ausgewählte Buchstabe/Zeichen nicht das endungszeichen "$" ist, write_char ausführen
+	{
+		write_char(character);		// Ausgewählter Buchstabe/Zeichen auf display ausgeben
 		character = text.charAt(0); // Ersten Buchstaben/Zeichen auswählen
-		text.remove(0, 1); // Entferne ersten Buchstaben/Zeichen welcher ausgewählt wurde
+		text.remove(0, 1);			// Entferne ersten Buchstaben/Zeichen welcher ausgewählt wurde
 	}
 }
 
 /**
  * @brief Programmiert Sonderzeichen in das CGRAM des Displays.
  */
-void sonderzeichen() {
+void sonderzeichen()
+{
 	write_instr(0x40); // Die CGRAM auf Addresse 0 stellen
-	for (int i = 0; i <= 7; i++) { // Zeile auswählen und um eine weitere Zeile erhöhen
+	for (int i = 0; i <= 7; i++)
+	{							// Zeile auswählen und um eine weitere Zeile erhöhen
 		write_char(pfeilnu[i]); // Ausgewählte Zeile an CGRAM senden
 	}
 
-	for (int i = 0; i <= 7; i++) { // Zeile auswählen und um eine weitere Zeile erhöhen
+	for (int i = 0; i <= 7; i++)
+	{					   // Zeile auswählen und um eine weitere Zeile erhöhen
 		write_char(my[i]); // Ausgewählte Zeile an CGRAM senden
 	}
 
-	/*for (int i = 0; i <= 7; i++) { // Zeile auswählen und um eine weitere Zeile erhöhen
+	for (int i = 0; i <= 7; i++)
+	{						  // Zeile auswählen und um eine weitere Zeile erhöhen
 		write_char(hoch3[i]); // Ausgewählte Zeile an CGRAM senden
-	}*/
+	}
 }
 
 /**
@@ -77,19 +78,66 @@ void sonderzeichen() {
  * 	   	  folgenden Globale Variablen gespeichert:
  *		  SDS_PM25
  *		  SDS_PM10
- * 
+ *
  */
-
+void FeinstaubsensorMessung() // TODO BUGFIX: Liest daten viermal oder siebenmal aus und nicht einmal
+{
+	while (Feinstaubsensor.available())
+	{
+		if (Feinstaubsensor.read() == 0xAA)
+		{
+			Feinstaubsensor_10byte[0] = 0xAA;
+			for (int i = 1; i < 10; i++)
+			{
+				Feinstaubsensor_10byte[i] = Feinstaubsensor.read();
+			}
+		}
+	}
+}
 
 /**
  * @brief Sie misst die Temperatur und Luftfeuchtigkeit des DHT22 Sensors und speichert diese in globalen Variablen.
  * 
  */
-void DHT_TemperatursensorMessung() {
-	//DHT_Temperatur = DHT_Temperatursensor.readTemperature();
-	//DHT_Luftfeuchtigkeit = DHT_Temperatursensor.readHumidity();
-	//Serial.println(DHT_Temperatur);
-	//Serial.println(DHT_Luftfeuchtigkeit);
+bool doesFeinstaubsensorHaveParity() {
+	unsigned char ParityBit = Feinstaubsensor_10byte[8];
+	unsigned char CalculatedParityBit = Feinstaubsensor_10byte[2] + Feinstaubsensor_10byte[3] + Feinstaubsensor_10byte[4] + Feinstaubsensor_10byte[5] + Feinstaubsensor_10byte[6] + Feinstaubsensor_10byte[7];
+	if (ParityBit == CalculatedParityBit)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+/**
+ * @brief Sie misst die Temperatur und Luftfeuchtigkeit des DHT22 Sensors und speichert diese in globalen Variablen.
+ * 
+ */
+bool doesTemperatursensorHaveParity() {
+	unsigned char ParityBit = Feinstaubsensor_10byte[8];
+	unsigned char CalculatedParityBit = Feinstaubsensor_10byte[2] + Feinstaubsensor_10byte[3] + Feinstaubsensor_10byte[4] + Feinstaubsensor_10byte[5] + Feinstaubsensor_10byte[6] + Feinstaubsensor_10byte[7];
+	if (ParityBit == CalculatedParityBit)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+/**
+ * @brief Sie misst die Temperatur und Luftfeuchtigkeit des DHT22 Sensors und speichert diese in globalen Variablen.
+ * 
+ */
+void TemperatursensorMessung() {
+	while (Temperatursensor.available())
+	{
+		Serial.println(Temperatursensor.read());
+	}
 }
 
 //////////////////////////////////////////////////
@@ -97,105 +145,104 @@ void DHT_TemperatursensorMessung() {
 //////////////////////////////////////////////////
 
 /* Hier wird alles einmal ausgeführt vor dem Hauptprogramm. Demnach ist dies unsere Initialisierung. */
-void setup() {
+void setup()
+{
 	// Port Ein-/Ausgänge
-	DDRA = 0xFF; // Ausgang Display
-	DDRC = 0xFF; // Ausgang Display
+	DDRA = B11111111; // Ausgang Display
+	DDRC = B11111111; // Ausgang Display
 	DDRB = B11111101; // Eingang/Ausgang Feinstaubsensor
-
-	
-	// Sensoren
-	//DHT_Temperatursensor.begin();
+	DDRJ = B11111110; // Eingang Temperatursensor
 
 	// Terminal/Konsole
 	Serial.begin(9600);
 
 	// Weitere Inits
-	//lcd_init();
-	//sonderzeichen();
+	lcd_init();
+	sonderzeichen();
 
-	// Softwareserials
+	// Sensoren
 	Feinstaubsensor.begin(9600);
-	// Temperatur/Humidity sensor
+	Temperatursensor.begin(9600);
 
-	//delay(1000); // 1 Sekunde warten bevor das Hauptprogramm dauerhaft ausgeführt wird damit alles ordungsgemäß funktioniert
 }
 
 /* Unser Hauptprogramm. Hier wird alles wiederholt ausgeführt solange kein Interrupt dies unterbrechen sollte. */
-void loop() {
+void loop()
+{
+	TemperatursensorMessung();
 
-	while (Feinstaubsensor.available()) {
-      while (Feinstaubsensor.read() == 0xAA) {
-        Serial.println("Received");
-        for (int i = 1; i < 10; i++) {
-          Feinstaubsensor_10byte[i] = Feinstaubsensor.read();
-          Serial.println(Feinstaubsensor_10byte[i]);
-        }
-        int PM25 = (Feinstaubsensor_10byte[3]*256)+(Feinstaubsensor_10byte[2]/10);
-        Serial.println(PM25);
-        Serial.println("END");
-        delay(1000);
-      }
-    }
-	
-	// DEBUG END
-/*
+	/* FEINSTAUB GEHT!
+	FeinstaubsensorMessung();
+	int F = ((Feinstaubsensor_10byte[3] * 256) + Feinstaubsensor_10byte[2]) / 10;
+	Serial.print("Real Value PM2.5: ");
+	Serial.println(F);
+	Serial.print("High Byte PM2.5: ");
+	Serial.println(Feinstaubsensor_10byte[3]);
+	Serial.print("Low Byte PM2.5: ");
+	Serial.println(Feinstaubsensor_10byte[2]);
+	int FF = ((Feinstaubsensor_10byte[5] * 256) + Feinstaubsensor_10byte[4]) / 10;
+	Serial.print("Real Value PM10: ");
+	Serial.println(FF);
+	Serial.print("High Byte PM10: ");
+	Serial.println(Feinstaubsensor_10byte[5]);
+	Serial.print("Low Byte PM10: ");
+	Serial.println(Feinstaubsensor_10byte[4]);
+	Serial.println();
+	Serial.print("Has Parity ? : ");
+	if (doesFeinstaubsensorHaveParity()) { Serial.println("Yes"); } else { Serial.println("No"); }
+	Serial.println("-------");
+	delay(5000);
+	*/
+	/*
 	write_instr(0x01); // Display löschen
 
-
-	//display_pos(Zeile_1);
-	//display_text("Startbit$");
-	//while (PINC != 0) {  };
-	//write_instr(0x01);
-
-
 	// "Feinstaubdaten" anzeigen
-	display_pos(0x00);					
+	display_pos(Zeile_1);
 	display_text("Feinstaub-$"); // "Feinstaub-"
-	display_pos(0x40);					
+	display_pos(Zeile_2);
 	display_text("daten:$"); // "daten:"
 
 	// PM2.5 sowie den Wert davon anzeigen
-	display_pos(0x0A);
+	display_pos(Zeile_3);
 	display_text("PM2.5:$"); // "PM2.5:"
-	display_pos(0x4A);
-	display_text(String(SDS_PM25)+"$"); // Wert von PM2.5 ausgeben
+	display_pos(Zeile_4);
+	display_text(String(SDS_PM25) + "$"); // Wert von PM2.5 ausgeben
+	write_instr(0x0C); // Cursor aus
 
 	delay(4000);
 
 	write_instr(0x01); // Display löschen
 
 	// "Feinstaubdaten" anzeigen
-	display_pos(0x00);					
+	display_pos(Zeile_1);
 	display_text("Feinstaub-$"); // "Feinstaub-"
-	display_pos(0x40);					
+	display_pos(Zeile_2);
 	display_text("daten:$"); // "daten:"
 
 	// PM10 sowie den Wert davon anzeigen
-	display_pos(0x0A);
+	display_pos(Zeile_3);
 	display_text("PM10:$"); // "PM10:"
-	display_pos(0x4A);
+	display_pos(Zeile_4);
 	display_text(String(SDS_PM10)+"$"); // Wert von PM10 ausgeben
+	write_instr(0x0C); // Cursor aus
 
 	delay(4000);
-	DHT_TemperatursensorMessung();
 
 	write_instr(0x01); // Display löschen
 
-	// "DHT_Temperatur" anzeigen
-	display_pos(0x00);					
-	display_text("DHT_Temperatur$"); // "Feinstaub-"
-	display_pos(0x40);					
-	display_text(String(DHT_Temperatur)+"$"); // "daten:"
+	// "Temperatur" sowie den Wert anzeigen
+	display_pos(Zeile_1);
+	display_text("Temperatur:$"); // "Temperatur"
+	display_pos(Zeile_2);
+	display_text(String(DHT_Temperatur)+"$"); // Wert von DHT_Temperatur ausgeben
 
-	// PM10 sowie den Wert davon anzeigen
-	display_pos(0x0A);
-	display_text("Humidity:$"); // "PM10:"
-	display_pos(0x4A);
-	display_text(String(DHT_Luftfeuchtigkeit)+"$"); // Wert von PM10 ausgeben
+	// "Humidity" sowie den Wert anzeigen
+	display_pos(Zeile_3);
+	display_text("Humidity:$"); // "Humidity:" anzeigen
+	display_pos(Zeile_4);
+	display_text(String(DHT_Luftfeuchtigkeit)+"$"); // Wert von DHT_Luftfeuchtigkeit ausgeben
+	write_instr(0x0C); // Cursor aus
 
 	delay(4000);
-
 	*/
-	
 }
