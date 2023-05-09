@@ -59,13 +59,13 @@ void display_text(String text)
 void sonderzeichen()
 {
 	write_instr(0x40); // Die CGRAM auf Addresse 0 stellen
-	for (uint8_t i = 0; i <= 7; i++)
-	{					   // Zeile auswählen und um eine weitere Zeile erhöhen
+	for (uint8_t i = 0; i <= 7; i++) // Zeile auswählen und um eine weitere Zeile erhöhen
+	{
 		write_char(my[i]); // Ausgewählte Zeile an CGRAM senden
 	}
 
-	for (uint8_t i = 0; i <= 7; i++)
-	{						  // Zeile auswählen und um eine weitere Zeile erhöhen
+	for (uint8_t i = 0; i <= 7; i++) // Zeile auswählen und um eine weitere Zeile erhöhen
+	{
 		write_char(hoch3[i]); // Ausgewählte Zeile an CGRAM senden
 	}
 }
