@@ -81,28 +81,28 @@ void sonderzeichen()
  */
 bool FeinstaubsensorMessung()
 {
-	while (Feinstaubsensor.available())
+	while (Feinstaubsensor.available()) // Wenn Daten zum abrufen Verfügbar sind
 	{
-		if (Feinstaubsensor.read() == 0xAA)
+		if (Feinstaubsensor.read() == 0xAA) // überprüfen ob erster Byte korrekt ist (muss 0xAA entsprechen laut Datenblatt)
 		{
-			FeinstaubsensorDaten[0] = 0xAA;
-			for (uint8_t i = 1; i < 10; i++)
+			FeinstaubsensorDaten[0] = 0xAA; // Wenn korrekt, diesen in das Array eintragen
+			for (uint8_t i = 1; i < 10; i++) // Alle weiteren Bytes nacheinander einlesen
 			{
 				FeinstaubsensorDaten[i] = Feinstaubsensor.read();
 			}
 		}
 	}
-	uint8_t ParityBit = FeinstaubsensorDaten[8];
-	uint8_t CalculatedParityBit = FeinstaubsensorDaten[2] + FeinstaubsensorDaten[3] + FeinstaubsensorDaten[4] + FeinstaubsensorDaten[5] + FeinstaubsensorDaten[6] + FeinstaubsensorDaten[7];
-	if (ParityBit == CalculatedParityBit) // Nur wenn Parität besteht die gerade ausgelesenen Daten eintragen, ansonsten Daten der letzten Messung verwenden
+	uint8_t ParityByte = FeinstaubsensorDaten[8]; // Parität Byte an Stelle 8 im Array
+	uint8_t CalculatedParityByte = FeinstaubsensorDaten[2] + FeinstaubsensorDaten[3] + FeinstaubsensorDaten[4] + FeinstaubsensorDaten[5] + FeinstaubsensorDaten[6] + FeinstaubsensorDaten[7];
+	if (ParityByte == CalculatedParityByte) // Nur wenn Parität besteht die gerade ausgelesenen Daten eintragen, ansonsten Daten der letzten Messung verwenden
 	{
-		Feinstaubsensor_PM10 = ((FeinstaubsensorDaten[3] *256) + FeinstaubsensorDaten[2])/10;
-		Feinstaubsensor_PM25 = ((FeinstaubsensorDaten[5] *256) + FeinstaubsensorDaten[4])/10;
-		return true;
+		Feinstaubsensor_PM10 = ((FeinstaubsensorDaten[3] *256) + FeinstaubsensorDaten[2])/10; // Die beiden ausgelesenen Bytes des Feinstaubsensors zu dem korrekten Feinstaubwert verarbeiten (PM10)
+		Feinstaubsensor_PM25 = ((FeinstaubsensorDaten[5] *256) + FeinstaubsensorDaten[4])/10; // Die beiden ausgelesenen Bytes des Feinstaubsensors zu dem korrekten Feinstaubwert verarbeiten (PM2.5)
+		return true; // Parität
 	}
 	else
 	{
-		return false;
+		return false; // Keine Parität
 	}
 }
 
@@ -133,7 +133,7 @@ bool TemperatursensorMessung()
 
 	for (int8_t i = -3; i < 80; i++)
 	{
-		byte live;
+		uint8_t live;
 		startTime = micros(); // Zeit bei Start speichern
 
 		do
@@ -208,8 +208,8 @@ void setup()
 	// Sensoren
 	Feinstaubsensor.begin(9600); // Feinstaubsensor mit der Übertragungsrate (Baudrate) von 9600 starten
 
-	FeinstaubsensorMessung(); // Daten des Feinstaubsensors auslesen (Hier vor Delay damit Daten beim Start des Arduino korrekt verarbeitet werden)
-	delay(1000); // Kurzer Delay um sicher zu gehen das alles korrekt initialisiert ist
+	FeinstaubsensorMessung(); // Daten des Feinstaubsensors auslesen (Hier vor Delay in der Init damit die Daten beim Start des Arduino korrekt verarbeitet werden)
+	delay(1000); // Kurzer Delay (1 Sekunde) um sicher zu gehen das alles korrekt initialisiert ist
 }
 
 /* Unser Hauptprogramm. Hier wird alles wiederholt ausgeführt solange kein Interrupt dies unterbrechen sollte. */
@@ -230,6 +230,9 @@ void loop()
 	display_text("PM2.5:"); // "PM2.5:" anzeigen
 	display_pos(Zeile_4);
 	display_text((String)Feinstaubsensor_PM25); // Wert von PM2.5 ausgeben als umgewandelten String
+	write_char(0x00); // "µ" anzeigen
+	display_text("g/m"); // "g/m" anzeigen
+	write_char(0x01); // "³" anzeigen
 
 	delay(4000); // Zeit zwischen den verschiedenen Anzeigen
 	write_instr(0x01); // Display löschen
@@ -245,16 +248,17 @@ void loop()
 	display_text("PM10:"); // "PM10:" anzeigen
 	display_pos(Zeile_4);
 	display_text((String)Feinstaubsensor_PM10); // Wert von PM10 ausgeben als umgewandelten String
+	write_char(0x00); // "µ" anzeigen
+	display_text("g/m"); // "g/m" anzeigen
+	write_char(0x01); // "³" anzeigen
 
 	TemperatursensorMessung(); // Daten des Temperatursensors auslesen
 	delay(4000); // Zeit zwischen den verschiedenen Anzeigen
 
 	float x	= (float)Temperatursensor_Temperatur / 10; // Wandelt Ganzzahl zu Gleitkommazahl um und setzt das Komma eins nach links
 	String temp = (String)x; // Wandelt Gleitkommazahl sowie das dazugehörige Komma zu Text um
-	temp.remove(temp.length() - 1); // Entfernt letzte null da immer null
-	temp = temp + "C";
+	temp.remove(temp.length() - 1); // Entfernt letzte zahl da immer null
 	String humi = (String)Temperatursensor_Luftfeuchtigkeit; // Wandelt Luftfeuchtigkeit als Ganzzahl zu Text um
-	humi = humi + "%";
 
 	write_instr(0x01); // Display löschen
 
@@ -263,12 +267,14 @@ void loop()
 	display_text("Temperatur:"); // "Temperatur:" anzeigen
 	display_pos(Zeile_2);
 	display_text(temp); // Wert von Temperatursensor_Temperatur ausgeben
+	//display_text("°C"); // "°C" anzeigen CHECK DAS NOCHMAL!!!
 
 	// "Humidity" sowie den Wert anzeigen
 	display_pos(Zeile_3);
 	display_text("Humidity:"); // "Humidity:" anzeigen
 	display_pos(Zeile_4);
 	display_text(humi); // Wert von Temperatursensor_Luftfeuchtigkeit ausgeben
+	display_text("%"); // "%" anzeigen
 
 	delay(4000); // Zeit zwischen den verschiedenen Anzeigen
 }
