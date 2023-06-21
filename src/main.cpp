@@ -2,8 +2,8 @@
 /////////////////////Includes/////////////////////
 //////////////////////////////////////////////////
 
-#include <display.h> // Vorgebene Display Library (leicht verändert wegen Port änderung)
-#include <SoftwareSerial.h> // Library zur auslesung von Daten mit einem SoftwareSerial objekt (2 Wire Protocol)
+#include <display.h> // Vorgebene Display Library (leicht verändert wegen Port Änderung)
+#include <SoftwareSerial.h> // Library zur Auslesung von Daten mit einem SoftwareSerial objekt (2 Wire Protocol)
 #include <Arduino.h> // Reguläre Arduino Library
 
 //////////////////////////////////////////////////
@@ -24,8 +24,8 @@
 
 uint8_t Feinstaubsensor_PM25 = 0; // PM2.5 Wert des Feinstaubssensors
 uint8_t Feinstaubsensor_PM10 = 0; // PM10 Wert des Feinstaubssensors
-uint16_t Temperatursensor_Luftfeuchtigkeit = 0; // Luftfeuchtigkeit des Temperatursensors
-uint16_t Temperatursensor_Temperatur = 0; // Temperatur des Temperatursensors
+float Temperatursensor_Luftfeuchtigkeit = 0; // Luftfeuchtigkeit des Temperatursensors
+float Temperatursensor_Temperatur = 0; // Temperatur des Temperatursensors
 uint8_t FeinstaubsensorDaten[10];
 
 //////////////////////////////////////////////////
@@ -86,27 +86,32 @@ void sonderzeichen()
  */
 bool FeinstaubsensorMessung()
 {
-	while (Feinstaubsensor.available()) // Wenn Daten zum abrufen Verfügbar sind
+	if (Feinstaubsensor.read() == 0xAA) // überprüfen ob erster Byte korrekt ist (muss 0xAA entsprechen laut Datenblatt)
 	{
-		if (Feinstaubsensor.read() == 0xAA) // überprüfen ob erster Byte korrekt ist (muss 0xAA entsprechen laut Datenblatt)
+		FeinstaubsensorDaten[0] = 0xAA; // Wenn korrekt, diesen in das Array eintragen
+		for (uint8_t i = 1; i < 10; i++) // Alle weiteren Bytes nacheinander einlesen
 		{
-			FeinstaubsensorDaten[0] = 0xAA; // Wenn korrekt, diesen in das Array eintragen
-			for (uint8_t i = 1; i < 10; i++) // Alle weiteren Bytes nacheinander einlesen
-			{
-				FeinstaubsensorDaten[i] = Feinstaubsensor.read();
-			}
+			FeinstaubsensorDaten[i] = Feinstaubsensor.read();
 		}
 	}
 	uint8_t ParityByte = FeinstaubsensorDaten[8]; // Parität Byte an Stelle 8 im Array
 	uint8_t CalculatedParityByte = FeinstaubsensorDaten[2] + FeinstaubsensorDaten[3] + FeinstaubsensorDaten[4] + FeinstaubsensorDaten[5] + FeinstaubsensorDaten[6] + FeinstaubsensorDaten[7];
 	if (ParityByte == CalculatedParityByte) // Nur wenn Parität besteht die gerade ausgelesenen Daten eintragen, ansonsten Daten der letzten Messung verwenden
 	{
-		Feinstaubsensor_PM10 = ((FeinstaubsensorDaten[3] * 256) + FeinstaubsensorDaten[2]) / 10; // Die beiden ausgelesenen Bytes des Feinstaubsensors zu dem korrekten Feinstaubwert verarbeiten (PM10)
-		Feinstaubsensor_PM25 = ((FeinstaubsensorDaten[5] * 256) + FeinstaubsensorDaten[4]) / 10; // Die beiden ausgelesenen Bytes des Feinstaubsensors zu dem korrekten Feinstaubwert verarbeiten (PM2.5)
+		Feinstaubsensor_PM25 = ((FeinstaubsensorDaten[3] * 256) + FeinstaubsensorDaten[2]) / 10; // Die beiden ausgelesenen Bytes des Feinstaubsensors zu dem korrekten Feinstaubwert verarbeiten (PM2.5)
+		Feinstaubsensor_PM10 = ((FeinstaubsensorDaten[5] * 256) + FeinstaubsensorDaten[4]) / 10; // Die beiden ausgelesenen Bytes des Feinstaubsensors zu dem korrekten Feinstaubwert verarbeiten (PM10)
+		Serial.print("PARITÄT Byte: ");
+		Serial.print(ParityByte);
+		Serial.print(" | ");
+		Serial.println(CalculatedParityByte);
 		return true; // Parität
 	}
 	else
 	{
+		Serial.print("KEINE PARITÄT");
+		Serial.print(ParityByte);
+		Serial.print(" | ");
+		Serial.println(CalculatedParityByte);
 		return false; // Keine Parität
 	}
 }
@@ -134,7 +139,7 @@ bool TemperatursensorMessung()
 	uint16_t rawTemperature = 0;
 	uint8_t checkSum = 0;
 	uint16_t data = 0;	
-	uint32_t startTime;
+	uint64_t startTime = 0;
 
 	for (int8_t i = -3; i < 80; i++)
 	{
@@ -144,12 +149,15 @@ bool TemperatursensorMessung()
 		do
 		{
 			live = (uint64_t)(micros() - startTime); // Misst wie lange der TemperatursensorOWP Pin auf 1 (HIGH) ist
+			if ( live > 90 ) {
+        		//Serial.println("ERROR_TIMEOUT"); // TIMEOUT
+      		}
 		} while (digitalRead(TemperatursensorOWP) == (i & 1) ? HIGH : LOW);
 
 		if (i >= 0 && (i & 1))
 		{
 			data <<= 1; // Verschiebt das letzte Bit eins nach links
-			if (live > 30) // Wenn der Pin über 30 us auf 1 (HIGH) ist, ist es eine 1 als data
+			if (live > 40) // Wenn der Pin über 30 us auf 1 (HIGH) ist, ist es eine 1 als data
 			{
 				data |= 1; // Setzt das korrekte Bit auf 1
 			}
@@ -181,8 +189,8 @@ bool TemperatursensorMessung()
 	uint8_t calculatedCheckSum = hTemp + lTemp + hHumidity + lHumidity;
 	if (checkSum == calculatedCheckSum) // Nur wenn Parität besteht die gerade ausgelesenen Daten eintragen, ansonsten Daten der letzten Messung verwenden
 	{
-		Temperatursensor_Temperatur = hTemp + lTemp;
-		Temperatursensor_Luftfeuchtigkeit = hHumidity + lHumidity;
+		Temperatursensor_Temperatur = (float)((hTemp * 256) + ((lTemp >> 4) * 16) + (lTemp & B00001111)) / 10;
+		Temperatursensor_Luftfeuchtigkeit = (float)((hHumidity * 256) + ((lHumidity >> 4) * 16) + (lHumidity & B00001111)) / 10;
 		return true;
 	} else {
 		return false;
@@ -199,8 +207,8 @@ bool TemperatursensorMessung()
  */
 void ZusatzFunktionen()
 {
-	// Wenn luftfeuchtigkeit über 70% ist, Feinstaubsensor deaktivieren da dieser sonnst beschädigt wird (siehe datenblatt)
-	if (Temperatursensor_Luftfeuchtigkeit >= 70) {
+	// Wenn die Luftfeuchtigkeit über 70% ist, Feinstaubsensor deaktivieren da dieser sonnst beschädigt wird (siehe Datenblatt)
+	if (Temperatursensor_Luftfeuchtigkeit >= 70.0f) {
 		pinMode(PORTB1, OUTPUT); // Eingang des Feinstaubsensors deaktivieren
 	} else {
 		pinMode(PORTB1, INPUT); // Eingang des Feinstaubsensors reaktivieren
@@ -222,7 +230,7 @@ void setup()
 	PORTB = B11111101; // LED's ausmachen
 
 	// Terminal/Konsole
-	//Serial.begin(9600); // Serial Konsole für DEBUG
+	Serial.begin(9600); // Serial Konsole für DEBUG
 
 	// Weitere Inits
 	lcd_init(); // Display initialisieren
@@ -239,8 +247,8 @@ void setup()
 /* Unser Hauptprogramm. Hier wird alles wiederholt ausgeführt solange kein Interrupt dies unterbrechen sollte. */
 void loop()
 {
-	Serial.println(Temperatursensor_Luftfeuchtigkeit);
 	FeinstaubsensorMessung(); // Daten des Feinstaubsensors auslesen
+	delay(1000);
 	write_instr(0x01); // Display Inhalt löschen
 
 	// "Feinstaubdaten" anzeigen
@@ -257,8 +265,13 @@ void loop()
 	write_char(Z_my); // "µ" anzeigen
 	display_text("g/m"); // "g/m" anzeigen
 	write_char(Z_hoch3); // "³" anzeigen
+	if (Feinstaubsensor_PM25 > 25) {
+		display_pos(0x51);
+		display_text("!!!");
+	}
 
-	delay(4000); // Zeit zwischen den verschiedenen Anzeigen
+	//FeinstaubsensorMessung(); // Daten des Feinstaubsensors auslesen
+	delay(3000); // Zeit zwischen den verschiedenen Anzeigen
 	write_instr(0x01); // Display Inhalt löschen
 
 	// "Feinstaubdaten" anzeigen
@@ -275,14 +288,20 @@ void loop()
 	write_char(Z_my); // "µ" anzeigen
 	display_text("g/m"); // "g/m" anzeigen
 	write_char(Z_hoch3); // "³" anzeigen
+	if (Feinstaubsensor_PM10 > 40) {
+		display_pos(0x51);
+		display_text("!!!");
+	}
 
 	TemperatursensorMessung(); // Daten des Temperatursensors auslesen
-	delay(4000); // Zeit zwischen den verschiedenen Anzeigen
+	FeinstaubsensorMessung();
+	delay(3000); // Zeit zwischen den verschiedenen Anzeigen
 
-	float x	= (float)Temperatursensor_Temperatur / 10; // Wandelt Ganzzahl zu Gleitkommazahl um und setzt das Komma eins nach links
-	String temp = (String)x; // Wandelt Gleitkommazahl sowie das dazugehörige Komma zu Text um
-	temp.remove(temp.length() - 1); // Entfernt letzte zahl da immer null
-	String humi = (String)Temperatursensor_Luftfeuchtigkeit; // Wandelt Luftfeuchtigkeit als Ganzzahl zu Text um
+
+	String temp = (String)Temperatursensor_Temperatur; // Wandelt Gleitkommazahl sowie das dazugehörige Komma zu Text um
+	temp.remove(temp.length() - 1); // Entfernt letzte Zahl da immer null
+	String humi = (String)Temperatursensor_Luftfeuchtigkeit; // Wandelt Gleitkommazahl sowie das dazugehörige Komma zu Text um
+	humi.remove(humi.length() - 1); // Entfernt letzte Zahl da immer null
 
 	write_instr(0x01); // Display Inhalt löschen
 
@@ -293,6 +312,10 @@ void loop()
 	display_text(temp); // Wert von Temperatursensor_Temperatur ausgeben
 	write_char(Z_grad); // "°" anzeigen
 	display_text("C"); // "C" anzeigen
+	if (Temperatursensor_Temperatur > 30.0f) {
+		display_pos(0x47);
+		display_text("!!!");
+	}
 
 	// "Humidity" sowie den Wert anzeigen
 	display_pos(Zeile_3);
@@ -300,7 +323,11 @@ void loop()
 	display_pos(Zeile_4);
 	display_text(humi); // Wert von Temperatursensor_Luftfeuchtigkeit ausgeben
 	display_text("%"); // "%" anzeigen
+	if (Temperatursensor_Luftfeuchtigkeit > 60.0f) {
+		display_pos(0x51);
+		display_text("!!!");
+	}
 
-	delay(4000); // Zeit zwischen den verschiedenen Anzeigen
-	ZusatzFunktionen();
+	delay(2000); // Zeit zwischen den verschiedenen Anzeigen
+	//ZusatzFunktionen();
 }
